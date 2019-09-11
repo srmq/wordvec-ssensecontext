@@ -10,6 +10,7 @@ import br.cin.ufpe.nlp.api.tokenization.Tokenizer;
 import br.cin.ufpe.nlp.api.tokenization.TokenizerFactory;
 import br.cin.ufpe.nlp.api.transform.DocumentProcessorNToOne;
 import br.cin.ufpe.nlp.api.vectors.VectorVocab;
+import br.cin.ufpe.nlp.util.EnStopWords;
 
 public class SSenseContextProcessor implements DocumentProcessorNToOne {
 	private VectorVocab vecVocab;
@@ -40,7 +41,7 @@ public class SSenseContextProcessor implements DocumentProcessorNToOne {
 				float[] embed;
 				if ((embed = vecVocab.embeddingFor(word)) != null) {
 					final double wordAppearsInNdocs = tfIdfInfo.docAppearedIn(word);
-					if (wordAppearsInNdocs >= rareWordThreshold) {
+					if (!EnStopWords.isStopWord(word) && wordAppearsInNdocs >= rareWordThreshold) {
 						final double idfWeight = Math.log(this.totalDocs / wordAppearsInNdocs);
 						if (Double.isNaN(idfWeight) || Double.isInfinite(idfWeight)) {
 							System.err.println("oops, idfWeight was invalid");
