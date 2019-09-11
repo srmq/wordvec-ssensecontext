@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
@@ -51,7 +52,7 @@ public class Activator implements BundleActivator {
 				logger.info(service.getClass().getName() + " became available, continuing");
 				if(isReady()) {
 					try {
-						doStuff();
+						doStuff(this.context);
 					} catch (IOException e) {
 						throw new IllegalStateException("IOException when trying doStuff following serviceChanged", e);
 					}
@@ -117,19 +118,26 @@ public class Activator implements BundleActivator {
 			TokenizerFactory<Tokenizer<String>> tokenizerFactory = (TokenizerFactory<Tokenizer<String>>) context.getService(tokenservices[0]);
 			services.put(TokenizerFactory.class.getName(), tokenizerFactory);
 			if (isReady()) {
-				doStuff();
+				doStuff(context);
 				firstTime = false;
 			}
 		}
 	}
 	
-	private void doStuff() throws IOException {
+	private void doStuff(BundleContext context) throws IOException {
 		VectorVocabService vecVocabService = (VectorVocabService) services.get(VectorVocabService.class.getName());
 		@SuppressWarnings("unchecked")
 		TokenizerFactory<Tokenizer<String>> tokenizer = (TokenizerFactory<Tokenizer<String>>) services.get(TokenizerFactory.class.getName());
 		TfIdfComputerService tfIdfService = (TfIdfComputerService) services.get(TfIdfComputerService.class.getName());
 		SSenseContextController controller = new SSenseContextController(this.wordsPath, this.ssensesInputPath, this.ssenseOutPath, vecVocabService, tokenizer, this.indexDir, this.wordVectorFile, tfIdfService); 
 		controller.process();
+		logger.info("ALL DONE, now trying to shutdown gracefully");
+		try {
+			context.getBundle(0).stop();
+		} catch (BundleException e) {
+			e.printStackTrace();
+			throw new IllegalStateException("Error while trying to shutdown OSGI after all done", e);
+		}
 	}
 	
 	
